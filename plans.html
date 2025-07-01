@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer 7 Attack Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Tooltip styling */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 80px;
+            background-color: #3b82f6;
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 3px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 100%;
+            left: 50%;
+            margin-left: -40px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Custom slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 6px;
+            background: #e5e7eb;
+            border-radius: 5px;
+            background-image: linear-gradient(#3b82f6, #3b82f6);
+            background-size: 0% 100%;
+            background-repeat: no-repeat;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            box-shadow: 0 0 2px 0 #555;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #2563eb;
+        }
+
+        /* Custom select dropdown arrow */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1em;
+        }
+
+        /* Glowing effect for active attack */
+        .glow {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px -5px #3b82f6;
+            }
+            to {
+                box-shadow: 0 0 10px 2px #3b82f6;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen">
+    <!-- Payment Modal -->
+    <div id="paymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-blue-400">Top up your balance</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p class="mb-4">1. Select the cryptocurrencies you would like to top up your balance</p>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-2">Payment Methods:</label>
+                <select id="cryptoSelect" class="w-full bg-gray-700 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select a cryptocurrency</option>
+                    <option value="BTC">BTC</option>
+                    <option value="ETH">ETH</option>
+                    <option value="SOL">SOL</option>
+                    <option value="POL">POL</option>
+                    <option value="SUI">SUI</option>
+                </select>
+            </div>
+
+            <div id="addressContainer" class="bg-gray-700 p-4 rounded-md mb-4">
+                <p class="text-sm font-medium mb-2">Send payment to one of these addresses:</p>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">BTC</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('bc1p8f5zukh2jaf3qlyuyqkv5cta3tala6dpsmhal83y0nk6r23mmsfqaka48h', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">bc1p8f5zukh2jaf3qlyuyqkv5cta3tala6dpsmhal83y0nk6r23mmsfqaka48h</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">ETH</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">SOL</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('4LVZKwnpASNCEv2dpn3cDmzQWZ9r8vjY331oLCEE9k9y', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">4LVZKwnpASNCEv2dpn3cDmzQWZ9r8vjY331oLCEE9k9y</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">POL</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">SUI</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('0xf72cc96d52d28013f8f037375582bc3629234315d18357d9705751c437bff15b', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">0xf72cc96d52d28013f8f037375582bc3629234315d18357d9705751c437bff15b</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs text-red-400 mt-3">🔒 Attention: After copying, check that the address matches exactly. Sending to the wrong address cannot be restored.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-sm w-full text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p class="text-blue-400">Creating Invoice...</p>
+        </div>
+    </div>
+
+    <!-- Invoice Summary Modal -->
+    <div id="invoiceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-blue-400">Invoice Summary</h3>
+                <button id="closeInvoiceModal" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 mb-4">
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Invoice ID:</span>
+                    <span id="invoiceId" class="font-mono">INV-</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Action:</span>
+                    <span>Plan Upgrade</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Status:</span>
+                    <span class="text-yellow-400">Awaiting payment</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Price:</span>
+                    <span id="invoicePrice"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Created at:</span>
+                    <span id="invoiceDate"></span>
+                </div>
+                <p class="text-xs text-red-400 mt-3">🔒 Attention: After copying, check that the address matches exactly. Sending to the wrong address cannot be restored.</p>
+            </div>
+
+            <div class="bg-gray-700 p-4 rounded-md">
+                <p class="text-sm font-medium mb-2">Send payment to one of these addresses:</p>
+                <div class="space-y-3">
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">BTC</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('bc1p8f5zukh2jaf3qlyuyqkv5cta3tala6dpsmhal83y0nk6r23mmsfqaka48h', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">bc1p8f5zukh2jaf3qlyuyqkv5cta3tala6dpsmhal83y0nk6r23mmsfqaka48h</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">ETH</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">SOL</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('4LVZKwnpASNCEv2dpn3cDmzQWZ9r8vjY331oLCEE9k9y', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">4LVZKwnpASNCEv2dpn3cDmzQWZ9r8vjY331oLCEE9k9y</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">POL</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">0xBfb0DAce8B55f86CAD09c78a7B77fEb0889aa646</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-medium text-gray-400">SUI</p>
+                        <div class="tooltip cursor-pointer" onclick="copyToClipboard('0xf72cc96d52d28013f8f037375582bc3629234315d18357d9705751c437bff15b', this)">
+                            <p class="text-blue-400 break-all hover:text-blue-300 transition">0xf72cc96d52d28013f8f037375582bc3629234315d18357d9705751c437bff15b</p>
+                            <span class="tooltiptext">Click to copy</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateInvoiceId() {
+            return 'INV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        }
+
+        function showInvoiceModal(price) {
+            // Show loading modal first
+            const loadingModal = document.getElementById('loadingModal');
+            loadingModal.classList.remove('hidden');
+            
+            // Generate invoice details
+            document.getElementById('invoiceId').textContent = generateInvoiceId();
+            document.getElementById('invoicePrice').textContent = price;
+            document.getElementById('invoiceDate').textContent = new Date().toLocaleString();
+            
+            // After 1.5 seconds, hide loading and show invoice
+            setTimeout(() => {
+                loadingModal.classList.add('hidden');
+                const modal = document.getElementById('invoiceModal');
+                modal.classList.remove('hidden');
+            }, 1500);
+        }
+
+        function copyToClipboard(text, element) {
+            navigator.clipboard.writeText(text).then(() => {
+                const tooltip = element.querySelector('.tooltiptext');
+                tooltip.textContent = 'Copied!';
+                tooltip.style.backgroundColor = '#10b981'; // Green color
+                setTimeout(() => {
+                    tooltip.textContent = 'Click to copy';
+                    tooltip.style.backgroundColor = '#3b82f6'; // Blue color
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+
+    <script>
+        // Close invoice modal
+        document.getElementById('closeInvoiceModal').addEventListener('click', function() {
+            document.getElementById('invoiceModal').classList.add('hidden');
+        });
+    </script>
+
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-2xl font-bold text-blue-400 flex items-center">
+                    <i class="fas fa-shield-alt mr-2"></i>
+                    Layer 7 Attack Panel
+                </h1>
+                <div class="flex space-x-2">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm transition" onclick="window.location.href='index.html'">
+                        Attack Panel
+                    </button>
+                    <button class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-md text-sm transition">
+                        Plans
+                    </button>
+                </div>
+            </div>
+            <div class="text-sm bg-gray-800 px-3 py-1 rounded-full">
+                <span class="text-blue-400">Status:</span> 
+                <span id="status" class="text-green-400">Ready</span>
+            </div>
+        </div>
+
+        <!-- Pricing Plans -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-blue-400 mb-4 flex items-center">
+                <i class="fas fa-tags mr-2"></i>
+                💼 Subscription Plans (30 Days)
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Basic Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-green-500">
+                    <h3 class="font-bold text-green-500 mb-2">🟢 Plan: Basic</h3>
+                    <p class="text-sm mb-1">💵 Price: $65 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 1200 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 2</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 9</p>
+                    <p class="text-sm mb-1">🌐 API Access: No</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: No</p>
+                    <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$65')">
+                        Buy Now
+                    </button>
+                </div>
+
+                <!-- Standard Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-blue-500">
+                    <h3 class="font-bold text-blue-500 mb-2">🔵 Plan: Standard</h3>
+                    <p class="text-sm mb-1">💵 Price: $149 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 2400 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 4</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 9</p>
+                    <p class="text-sm mb-1">🌐 API Access: No</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: No</p>
+                    <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$149')">
+                        Buy Now
+                    </button>
+                </div>
+
+                <!-- Plus Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-yellow-500">
+                    <h3 class="font-bold text-yellow-500 mb-2">🟡 Plan: Plus</h3>
+                    <p class="text-sm mb-1">💵 Price: $259 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 3600 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 7</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 9</p>
+                    <p class="text-sm mb-1">🌐 API Access: No</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: No</p>
+                    <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$259')">
+                        Buy Now
+                    </button>
+                </div>
+
+                <!-- Advanced Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-orange-500">
+                    <h3 class="font-bold text-orange-500 mb-2">🟠 Plan: Advanced</h3>
+                    <p class="text-sm mb-1">💵 Price: $499 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 5500 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 10</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 9</p>
+                    <p class="text-sm mb-1">🌐 API Access: No</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: Yes</p>
+                    <button class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$499')">
+                        Buy Now
+                    </button>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-red-500">
+                    <h3 class="font-bold text-red-500 mb-2">🔴 Plan: Pro</h3>
+                    <p class="text-sm mb-1">💵 Price: $799 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 10800 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 15</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 10</p>
+                    <p class="text-sm mb-1">🌐 API Access: Yes</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: Yes</p>
+                    <button class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$799')">
+                        Buy Now
+                    </button>
+                </div>
+
+                <!-- Business Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-purple-500">
+                    <h3 class="font-bold text-purple-500 mb-2">🟣 Plan: Business</h3>
+                    <p class="text-sm mb-1">💵 Price: $1250 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 10800 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 25</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 9</p>
+                    <p class="text-sm mb-1">🌐 API Access: Yes</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: Yes</p>
+                    <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$1250')">
+                        Buy Now
+                    </button>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="bg-gray-700 rounded-lg p-4 border-l-4 border-gray-500">
+                    <h3 class="font-bold text-gray-300 mb-2">⚫ Plan: Enterprise</h3>
+                    <p class="text-sm mb-1">💵 Price: $1800 / 30 days</p>
+                    <p class="text-sm mb-1">⏱ Max Session Time: 28800 sec</p>
+                    <p class="text-sm mb-1">🔄 Concurrent Tasks: 30</p>
+                    <p class="text-sm mb-1">⚙️ Methods: 9</p>
+                    <p class="text-sm mb-1">🌐 API Access: Yes</p>
+                    <p class="text-sm mb-4">🚀 VIP Network: BOTNET</p>
+                    <button class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-md transition duration-200" onclick="showInvoiceModal('$1800')">
+                        Buy Now
+                    </button>
+                </div>
+            </div>
+        </div>
+
